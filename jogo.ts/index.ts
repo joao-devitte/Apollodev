@@ -1,0 +1,22 @@
+import { cavaleiro } from "./cavaleiro.js";
+import { petista } from "./Petista.js";
+import { jogo } from "./jogo1.js";
+
+let Welinton: cavaleiro = new cavaleiro ("Welinton Cavaleiro", 50, 400);
+let Petista: petista = new petista ("Goblin Petista", 25, 150);
+
+console.log("\n=== Exemplos de Ataques Diferentes ===\n");
+
+
+Welinton.atacarComTipo(Petista, "Espada");
+
+
+Welinton.atacarComTipo(Petista, "Mãos");
+
+
+Welinton.atacarComTipo(Petista, "Duas Espadas");
+
+console.log("\n=== Iniciando batalha ===\n");
+
+let game: jogo = new jogo ();
+game.inicia(Welinton, Petista);

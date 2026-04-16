@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Apollodev - Cavaleiro</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 2rem;
+      line-height: 1.5;
+      background: black;
+      color: white;
+    }
+    .hero {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .game-area {
+      display: flex;
+      gap: 2rem;
+      justify-content: center;
+      align-items: flex-start;
+      margin-top: 1.5rem;
+    }
+    .combatants {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      flex: 0 0 auto;
+    }
+    .battle-section {
+      flex: 1;
+      text-align: center;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .card {
+      background: #333;
+      border: 1px solid #666;
+      border-radius: 16px;
+      box-shadow: 0 12px 24px rgba(255,255,255,.1);
+      width: 260px;
+      padding: 1rem;
+      text-align: center;
+    }
+    .card img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 12px;
+    }
+    .card h2 {
+      margin: 0.75rem 0 0.4rem;
+      font-size: 1.1rem;
+    }
+    .card p {
+      margin: 0;
+      color: #ccc;
+    }
+    h2 {
+      color: #fff;
+      margin: 2rem 0 1rem;
+    }
+    pre {
+      background: black;
+      border: 1px solid #333;
+      color: #00ff00;
+      padding: 1.5rem;
+      max-height: 500px;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 0.8rem;
+      line-height: 1.6;
+      font-family: 'Courier New', monospace;
+    }
+    code {
+      background: #eef;
+      padding: 0.1rem 0.3rem;
+      border-radius: 3px;
+    }
+    button {
+      padding: 0.8rem 1.2rem;
+      font-size: 1rem;
+      margin-top: 1rem;
+      background: #3d7dcb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #3264a8;
+    }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <h1>Batalha do Apocalipse</h1>
+
+    <div class="game-area">
+      <div class="combatants">
+        <div class="card">
+          <img src="c:\Users\Aluno\Downloads\—Pngtree—medieval mouse knight in armor_23967074.png" alt="Welinton Cavaleiro" />
+          <h2>Welinton Cavaleiro</h2>
+          <p>Um guerreiro forte e corajoso pronto para defender seu país do mal.</p>
+        </div>
+        <div class="card">
+          <img src="c:\Users\Aluno\Downloads\edited.png" alt="Goblin do PT" />
+          <h2>Goblin do PT</h2>
+          <p>O inimigo astuto e imprevisível do país.</p>
+        </div>
+      </div>
+
+      <div class="battle-section">
+        <button id="run">Começar a batalha</button>
+
+        <h2>Log da Batalha</h2>
+        <pre id="output">Console de saída do jogo.
+</pre>
+      </div>
+    </div>
+  </div>
+  <script>
+    const output = document.getElementById('output');
+    const runButton = document.getElementById('run');
+    const originalLog = console.log;
+
+    function appendLog(...args) {
+      const text = args.map(item => (typeof item === 'object' ? JSON.stringify(item, null, 2) : item)).join(' ');
+      output.textContent += text + '\n';
+    }
+
+    console.log = (...args) => {
+      appendLog(...args);
+      originalLog.apply(console, args);
+    };
+
+    class personagem {
+      constructor(nome, forca, vida, defesa = 0, cura = 0) {
+        this.nome = nome;
+        this.forca = forca;
+        this.vida = vida;
+        this.defesa = defesa;
+        this.cura = cura;
+      }
+
+      isContinuaVivo() {
+        return this.vida > 0;
+      }
+
+      sofrerAtaque(dano) {
+        const danoEfetivo = dano * (1 - this.defesa / 100);
+        this.vida = this.vida - danoEfetivo;
+        console.log(`${this.nome} recebeu ${danoEfetivo} de dano (reduzido de ${dano}). vida atual: ${this.vida}`);
+
+        if (this.vida < 50 && this.cura > 0) {
+          this.vida += this.cura;
+          console.log(`${this.nome} se curou por ${this.cura}. Vida atual: ${this.vida}`);
+        }
+      }
+
+      atacar(persona) {
+        throw new Error('Método atacar deve ser implementado.');
+      }
+    }
+
+    class Ataque {
+      constructor(tipo, dano, descricao) {
+        this.tipo = tipo;
+        this.dano = dano;
+        this.descricao = descricao;
+      }
+
+      getTipo() {
+        return this.tipo;
+      }
+
+      getDano() {
+        return this.dano;
+      }
+
+      getDescricao() {
+        return this.descricao;
+      }
+    }
+
+    class CatalogoAtaques {
+      static obterAtaque(tipo) {
+        const ataques = new Map([
+          ['Espada', new Ataque('Espada', 20, 'atacou com a espada')],
+          ['Mãos', new Ataque('Mãos', 5, 'atacou com as mãos')],
+          ['Duas Espadas', new Ataque('Duas Espadas', 25, 'atacou com 2 espadas')]
+        ]);
+        return ataques.get(tipo);
+      }
+    }
+
+    class cavaleiro extends personagem {
+      constructor(nome, forca, vida) {
+        super(nome, forca, vida, 10, 25);
+      }
+
+      atacar(alvo) {
+        console.log(`${this.nome} atacou ${alvo.nome}`);
+        alvo.sofrerAtaque(this.forca);
+      }
+
+      atacarComTipo(alvo, tipoAtaque) {
+        const ataque = CatalogoAtaques.obterAtaque(tipoAtaque);
+        if (ataque) {
+          console.log(`${this.nome} ${ataque.getDescricao()} contra ${alvo.nome}`);
+          console.log(`💥 Dano: ${ataque.getDano()}`);
+          alvo.sofrerAtaque(ataque.getDano());
+        } else {
+          console.log('Tipo de ataque inválido!');
+        }
+      }
+    }
+
+    class petista extends personagem {
+      constructor(nome, forca, vida) {
+        super(nome, forca, vida);
+      }
+
+      atacar(alvo) {
+        console.log(`${this.nome} atacou ${alvo.nome}`);
+      }
+    }
+
+    class jogo {
+      inicia(player1, player2) {
+        let turno = 1;
+        while (player1.isContinuaVivo() && player2.isContinuaVivo()) {
+          console.log(`\n============================ TURNO ${turno} ============================ `);
+          player1.atacar(player2);
+
+          if (!player2.isContinuaVivo()) {
+            break;
+          }
+
+          player2.atacar(player1);
+          turno++;
+        }
+
+        if (player1.isContinuaVivo()) {
+          console.log(`${player1.nome} ganhou a luta.`);
+        } else {
+          console.log(`${player2.nome} ganhou a luta.`);
+        }
+      }
+    }
+
+    function startBattle() {
+      output.textContent = '';
+      try {
+        const Welinton = new cavaleiro('Welinton Cavaleiro', 50, 400);
+        const Petista = new petista('Goblin Petista', 25, 150);
+
+        console.log('\n=== Exemplos de Ataques Diferentes ===\n');
+        Welinton.atacarComTipo(Petista, 'Espada');
+        Welinton.atacarComTipo(Petista, 'Mãos');
+        Welinton.atacarComTipo(Petista, 'Duas Espadas');
+
+        console.log('\n=== Iniciando batalha ===\n');
+        const game = new jogo();
+        game.inicia(Welinton, Petista);
+      } catch (error) {
+        appendLog('Erro ao iniciar a batalha: ' + error);
+      }
+    }
+
+    if (runButton) {
+      runButton.addEventListener('click', startBattle);
+    }
+  </script>
+</body>
+</html>

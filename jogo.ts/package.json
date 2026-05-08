@@ -1,0 +1,14 @@
+{
+  "name": "jogo-ts",
+  "version": "1.0.0",
+  "description": "Jogo em TypeScript com build para JavaScript",
+  "main": "build/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "python -m http.server 8000",
+    "dev": "tsc --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

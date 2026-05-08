@@ -33,50 +33,106 @@
     }
     .battle-section {
       flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       text-align: center;
+      max-width: 420px;
+      padding: 0.5rem;
+      margin: 0 auto;
     }
     h1 {
       text-align: center;
       margin-bottom: 1rem;
     }
     .card {
-      background: #333;
-      border: 1px solid #666;
-      border-radius: 16px;
-      box-shadow: 0 12px 24px rgba(255,255,255,.1);
-      width: 260px;
-      padding: 1rem;
+      background: #1f2530;
+      border: 1px solid #444;
+      border-radius: 14px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.35);
+      width: 220px;
+      padding: 0.9rem;
       text-align: center;
     }
     .card img {
       max-width: 100%;
       height: auto;
-      border-radius: 12px;
+      border-radius: 10px;
     }
     .card h2 {
-      margin: 0.75rem 0 0.4rem;
-      font-size: 1.1rem;
+      margin: 0.65rem 0 0.35rem;
+      font-size: 1rem;
     }
     .card p {
       margin: 0;
-      color: #ccc;
+      color: #b8c2d1;
+      font-size: 0.92rem;
+      line-height: 1.4;
+    }
+    .health-status {
+      margin-top: 0.75rem;
+      text-align: left;
+      font-size: 0.85rem;
+      color: #9cf2a0;
+    }
+    .health-info {
+      margin-top: 0.4rem;
+      font-size: 0.8rem;
+      color: #e3f8a2;
+      opacity: 0.9;
+    }
+    .health-bar {
+      width: 100%;
+      height: 0.65rem;
+      background: #293333;
+      border: 1px solid #40705e;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 0.35rem;
+    }
+    .health-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #69f2a6, #1a8f6e);
+      border-radius: 999px;
+      transition: width 1.25s ease;
+    }
+    .hit {
+      animation: hitFlash 0.75s ease;
+      animation-fill-mode: forwards;
+      box-shadow: 0 0 0 3px rgba(255, 80, 80, 0.25);
+      border-color: #ff5d5d;
+    }
+    @keyframes hitFlash {
+      0% { transform: translateX(0) scale(1); }
+      20% { transform: translateX(-4px) scale(1.02); }
+      40% { transform: translateX(4px) scale(1.02); }
+      60% { transform: translateX(-2px) scale(1.01); }
+      80% { transform: translateX(2px) scale(1.005); }
+      100% { transform: translateX(0) scale(1); }
     }
     h2 {
       color: #fff;
-      margin: 2rem 0 1rem;
+      margin: 1.2rem 0 0.8rem;
+      font-size: 1.1rem;
     }
     pre {
-      background: black;
-      border: 1px solid #333;
-      color: #00ff00;
-      padding: 1.5rem;
-      max-height: 500px;
-      overflow: auto;
+      background: #07100d;
+      border: 1px solid #2a3a3a;
+      border-radius: 14px;
+      color: #8ff2a8;
+      padding: 1rem;
+      max-height: 280px;
+      overflow-y: auto;
+      overflow-x: hidden;
       white-space: pre-wrap;
       word-break: break-word;
-      font-size: 0.8rem;
-      line-height: 1.6;
+      font-size: 0.82rem;
+      line-height: 1.45;
       font-family: 'Courier New', monospace;
+      text-align: left;
+      margin: 0 auto;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03);
     }
     code {
       background: #eef;
@@ -104,15 +160,25 @@
 
     <div class="game-area">
       <div class="combatants">
-        <div class="card">
+        <div class="card" id="card-welinton">
           <img src="c:\Users\Aluno\Downloads\—Pngtree—medieval mouse knight in armor_23967074.png" alt="Welinton Cavaleiro" />
           <h2>Welinton Cavaleiro</h2>
           <p>Um guerreiro forte e corajoso pronto para defender seu país do mal.</p>
+          <div class="health-status">
+            <div class="health-bar"><div id="health-fill-welinton" class="health-fill"></div></div>
+            <div id="hp-welinton">HP: 760 / 760</div>
+            <div id="status-welinton" class="health-info">Pronto para batalha</div>
+          </div>
         </div>
-        <div class="card">
+        <div class="card" id="card-petista">
           <img src="c:\Users\Aluno\Downloads\edited.png" alt="Goblin do PT" />
-          <h2>Goblin do PT</h2>
-          <p>O inimigo astuto e imprevisível do país.</p>
+          <h2>Goblin Petista</h2>
+          <p>O inimigo burro igual o Lule e imprevisível do país.</p>
+          <div class="health-status">
+            <div class="health-bar"><div id="health-fill-petista" class="health-fill"></div></div>
+            <div id="hp-petista">HP: 720 / 720</div>
+            <div id="status-petista" class="health-info">Pronto para batalha</div>
+          </div>
         </div>
       </div>
 
@@ -125,158 +191,6 @@
       </div>
     </div>
   </div>
-  <script>
-    const output = document.getElementById('output');
-    const runButton = document.getElementById('run');
-    const originalLog = console.log;
-
-    function appendLog(...args) {
-      const text = args.map(item => (typeof item === 'object' ? JSON.stringify(item, null, 2) : item)).join(' ');
-      output.textContent += text + '\n';
-    }
-
-    console.log = (...args) => {
-      appendLog(...args);
-      originalLog.apply(console, args);
-    };
-
-    class personagem {
-      constructor(nome, forca, vida, defesa = 0, cura = 0) {
-        this.nome = nome;
-        this.forca = forca;
-        this.vida = vida;
-        this.defesa = defesa;
-        this.cura = cura;
-      }
-
-      isContinuaVivo() {
-        return this.vida > 0;
-      }
-
-      sofrerAtaque(dano) {
-        const danoEfetivo = dano * (1 - this.defesa / 100);
-        this.vida = this.vida - danoEfetivo;
-        console.log(`${this.nome} recebeu ${danoEfetivo} de dano (reduzido de ${dano}). vida atual: ${this.vida}`);
-
-        if (this.vida < 50 && this.cura > 0) {
-          this.vida += this.cura;
-          console.log(`${this.nome} se curou por ${this.cura}. Vida atual: ${this.vida}`);
-        }
-      }
-
-      atacar(persona) {
-        throw new Error('Método atacar deve ser implementado.');
-      }
-    }
-
-    class Ataque {
-      constructor(tipo, dano, descricao) {
-        this.tipo = tipo;
-        this.dano = dano;
-        this.descricao = descricao;
-      }
-
-      getTipo() {
-        return this.tipo;
-      }
-
-      getDano() {
-        return this.dano;
-      }
-
-      getDescricao() {
-        return this.descricao;
-      }
-    }
-
-    class CatalogoAtaques {
-      static obterAtaque(tipo) {
-        const ataques = new Map([
-          ['Espada', new Ataque('Espada', 20, 'atacou com a espada')],
-          ['Mãos', new Ataque('Mãos', 5, 'atacou com as mãos')],
-          ['Duas Espadas', new Ataque('Duas Espadas', 25, 'atacou com 2 espadas')]
-        ]);
-        return ataques.get(tipo);
-      }
-    }
-
-    class cavaleiro extends personagem {
-      constructor(nome, forca, vida) {
-        super(nome, forca, vida, 10, 25);
-      }
-
-      atacar(alvo) {
-        console.log(`${this.nome} atacou ${alvo.nome}`);
-        alvo.sofrerAtaque(this.forca);
-      }
-
-      atacarComTipo(alvo, tipoAtaque) {
-        const ataque = CatalogoAtaques.obterAtaque(tipoAtaque);
-        if (ataque) {
-          console.log(`${this.nome} ${ataque.getDescricao()} contra ${alvo.nome}`);
-          console.log(`💥 Dano: ${ataque.getDano()}`);
-          alvo.sofrerAtaque(ataque.getDano());
-        } else {
-          console.log('Tipo de ataque inválido!');
-        }
-      }
-    }
-
-    class petista extends personagem {
-      constructor(nome, forca, vida) {
-        super(nome, forca, vida);
-      }
-
-      atacar(alvo) {
-        console.log(`${this.nome} atacou ${alvo.nome}`);
-      }
-    }
-
-    class jogo {
-      inicia(player1, player2) {
-        let turno = 1;
-        while (player1.isContinuaVivo() && player2.isContinuaVivo()) {
-          console.log(`\n============================ TURNO ${turno} ============================ `);
-          player1.atacar(player2);
-
-          if (!player2.isContinuaVivo()) {
-            break;
-          }
-
-          player2.atacar(player1);
-          turno++;
-        }
-
-        if (player1.isContinuaVivo()) {
-          console.log(`${player1.nome} ganhou a luta.`);
-        } else {
-          console.log(`${player2.nome} ganhou a luta.`);
-        }
-      }
-    }
-
-    function startBattle() {
-      output.textContent = '';
-      try {
-        const Welinton = new cavaleiro('Welinton Cavaleiro', 50, 400);
-        const Petista = new petista('Goblin Petista', 25, 150);
-
-        console.log('\n=== Exemplos de Ataques Diferentes ===\n');
-        Welinton.atacarComTipo(Petista, 'Espada');
-        Welinton.atacarComTipo(Petista, 'Mãos');
-        Welinton.atacarComTipo(Petista, 'Duas Espadas');
-
-        console.log('\n=== Iniciando batalha ===\n');
-        const game = new jogo();
-        game.inicia(Welinton, Petista);
-      } catch (error) {
-        appendLog('Erro ao iniciar a batalha: ' + error);
-      }
-    }
-
-    if (runButton) {
-      runButton.addEventListener('click', startBattle);
-    }
-  </script>
+  <script src="./build/index.js"></script>
 </body>
 </html>

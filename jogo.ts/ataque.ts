@@ -1,3 +1,5 @@
+import { personagem } from "./personagem.js";
+
 export type TipoAtaque = string;
 
 export class Ataque {

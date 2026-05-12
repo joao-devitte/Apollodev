@@ -1,8 +1,9 @@
-import { cavaleiro } from "./cavaleiro.js";
-import { petista } from "./Petista.js";
-import { jogo } from "./jogo1.js";
+import { cavaleiro as Cavaleiro } from "./cavaleiro.js";
+import { petista as Petista } from "./Petista.js";
+import { jogo as Jogo } from "./jogo1.js";
 
 const originalLog = console.log.bind(console);
+const originalError = console.error.bind(console);
 
 function appendLog(output: HTMLPreElement | null, ...args: unknown[]): void {
   const text = args.map(item => (typeof item === "object" ? JSON.stringify(item, null, 2) : String(item))).join(" ");
@@ -16,6 +17,12 @@ console.log = (...args: unknown[]): void => {
   const output = document.getElementById("output") as HTMLPreElement | null;
   appendLog(output, ...args);
   originalLog(...args);
+};
+
+console.error = (...args: unknown[]): void => {
+  const output = document.getElementById("output") as HTMLPreElement | null;
+  appendLog(output, "[ERRO]", ...args);
+  originalError(...args);
 };
 
 function atualizarSaude(personagem: any, elementoTexto: HTMLElement | null, elementoBarra: HTMLElement | null, elementoEvento: HTMLElement | null, vidaMaxima: number): void {
@@ -37,7 +44,6 @@ function animarAtaque(elemento: HTMLElement | null): void {
   void elemento.offsetWidth;
   elemento.classList.add("hit");
 }
-
 function startBattle(output: HTMLPreElement | null, healthWelinton: HTMLElement | null, fillWelinton: HTMLElement | null, statusWelinton: HTMLElement | null, cardWelinton: HTMLElement | null, healthPetista: HTMLElement | null, fillPetista: HTMLElement | null, statusPetista: HTMLElement | null, cardPetista: HTMLElement | null): void {
   console.log("Função startBattle chamada!");
   try {
@@ -48,37 +54,87 @@ function startBattle(output: HTMLPreElement | null, healthWelinton: HTMLElement 
 
     output.textContent = "";
 
-    console.log("Criando personagens...");
-    const Welinton = new cavaleiro("Welinton Cavaleiro", 55, 760);
-    const Petista = new petista("Goblin Petista", 52, 720);
+    console.log("Criando personagens...");''
+    const Welinton = new Cavaleiro("Welinton Cavaleiro", 50, 500);
+    const PetistaInimigo = new Petista("Goblin Petista", 15, 300);
 
-    console.log("Configurando callbacks...");
-    Welinton.setAtualizadorStatus(() => atualizarSaude(Welinton, healthWelinton, fillWelinton, statusWelinton, 760));
-    Petista.setAtualizadorStatus(() => atualizarSaude(Petista, healthPetista, fillPetista, statusPetista, 720));
+    console.log("Configurando callbacks..."); // animaçao de ataque
+    Welinton.setAnimacaoAtaque(() => animarAtaque(cardWelinton));
+    PetistaInimigo.setAtualizadorStatus(() => atualizarSaude(PetistaInimigo, healthPetista, fillPetista, statusPetista, 5);
+    await esperartempo();
+
+    PetistaInimigo.setAnimacaoAtaque(() => animarAtaque(cardPetista));
 
     Welinton.setRegeneracao(12);
-    Petista.setRegeneracao(8);
+
+    PetistaInimigo.setRegeneracao(8);
 
     Welinton.setAnimacaoAtaque(() => animarAtaque(cardWelinton));
-    Petista.setAnimacaoAtaque(() => animarAtaque(cardPetista));
+    PetistaInimigo.setAnimacaoAtaque(() => animarAtaque(cardPetista));
 
-    console.log("Atualizando saúde inicial...");
-    atualizarSaude(Welinton, healthWelinton, fillWelinton, statusWelinton, 760);
-    atualizarSaude(Petista, healthPetista, fillPetista, statusPetista, 720);
 
     console.log("Iniciando exemplos de ataques...");
     console.log("\n=== Exemplos de Ataques Diferentes ===\n");
-    Welinton.atacarComTipo(Petista, "Espada");
-    Welinton.atacarComTipo(Petista, "Mãos");
-    Welinton.atacarComTipo(Petista, "Duas Espadas");
+    Welinton.atacarComTipo(PetistaInimigo, "Espada");
+    Welinton.atacarComTipo(PetistaInimigo, "Mãos");
+    Welinton.atacarComTipo(PetistaInimigo, "Duas Espadas");
 
     console.log("\n=== Iniciando batalha ===\n");
-    const game = new jogo();
-    game.inicia(Welinton, Petista);
-    console.log("Batalha concluída!");
+    const game = new Jogo();
+    
+    // Executar a batalha de forma assíncrona para não bloquear a UI
+    executarBatalhaAssincrona(game, Welinton, PetistaInimigo, output);
+    
   } catch (error) {
     console.error("Erro na função startBattle:", error);
   }
+}
+
+function executarBatalhaAssincrona(game: any, player1: any, player2: any, output: HTMLPreElement): void {
+  let turno = 1;
+  const maxTurnos = 100;
+  let batalhaCompleta = false;
+
+  function executarTurno() {
+    if (batalhaCompleta || turno > maxTurnos) {
+      if (turno > maxTurnos) {
+        console.log("Limite de turnos atingido!");
+      }
+      if (player1.isContinuaVivo()) {
+        console.log(`${player1.nome} ganhou a luta.`);
+      } else {
+        console.log(`${player2.nome} ganhou a luta.`);
+      }
+      console.log("Batalha concluída!");
+      return;
+    }
+
+    console.log("\n============================ TURNO " + turno + " ============================ ");
+    player1.atacar(player2);
+
+    if (!player2.isContinuaVivo()) {
+      batalhaCompleta = true;
+      if (player1.isContinuaVivo()) {
+        console.log(`${player1.nome} ganhou a luta.`);
+      } else {
+        console.log(`${player2.nome} ganhou a luta.`);
+      }
+      console.log("Batalha concluída!");
+      return;
+    }
+
+    player2.atacar(player1);
+    player1.regenerar();
+    player2.regenerar();
+
+    turno++;
+    
+    // Agendar próximo turno para a próxima frame
+    requestAnimationFrame(executarTurno);
+  }
+
+  // Iniciar primeira frame
+  requestAnimationFrame(executarTurno);
 }
 
 // Inicialização automática quando a página carrega

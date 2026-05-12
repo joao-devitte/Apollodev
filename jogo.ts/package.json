@@ -1,14 +1,17 @@
 {
-  "name": "jogo-ts",
+  "name": "game",
   "version": "1.0.0",
-  "description": "Jogo em TypeScript com build para JavaScript",
-  "main": "build/index.js",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "build": "tsc",
-    "start": "python -m http.server 8000",
-    "dev": "tsc --watch"
-  },
+  "build": "esbuild index.ts --bundle --outfile=jogo.js --platform=browser",
+  "watch": "esbuild index.ts --bundle --outfile=jogo.js --platform=browser --watch"
+},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "esbuild": "^0.28.0"
   }
 }

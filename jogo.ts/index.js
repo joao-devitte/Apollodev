@@ -1,4 +1,5 @@
-// Classe base para personagens
+import { moveSyntheticComments } from "typescript";
+
 class Personagem {
     constructor(nome, forca, vida, defesa = 0, cura = 0) {
         this.nome = nome;
@@ -70,7 +71,7 @@ class Personagem {
     }
 }
 
-// Classe Cavaleiro
+
 class Cavaleiro extends Personagem {
     constructor(nome, forca, vida) {
         super(nome, forca, vida, 10, 25);
@@ -94,7 +95,7 @@ class Cavaleiro extends Personagem {
     }
 }
 
-// Classe Petista
+
 class Petista extends Personagem {
     constructor(nome, forca, vida) {
         super(nome, forca, vida, 8, 10);
@@ -106,7 +107,7 @@ class Petista extends Personagem {
     }
 }
 
-// Classe Ataque
+
 class Ataque {
     constructor(tipo, dano, descricao) {
         this.tipo = tipo;
@@ -127,7 +128,7 @@ class Ataque {
     }
 }
 
-// Classe CatalogoAtaques
+
 class CatalogoAtaques {
     static ataques = new Map([
         ["Espada", new Ataque("Espada", 20, "atacou com a espada")],
@@ -144,7 +145,7 @@ class CatalogoAtaques {
     }
 }
 
-// Classe Jogo
+
 class Jogo {
     inicia(player1, player2) {
         let turno = 1;
@@ -171,7 +172,7 @@ class Jogo {
     }
 }
 
-// Funções auxiliares
+
 const originalLog = console.log.bind(console);
 
 function appendLog(output, ...args) {
@@ -219,12 +220,12 @@ function startBattle(output, healthWelinton, fillWelinton, statusWelinton, cardW
         output.textContent = "";
 
         console.log("Criando personagens...");
-        const Welinton = new Cavaleiro("Welinton Cavaleiro", 55, 760);
-        const Petista = new Petista("Goblin Petista", 52, 720);
+        const Welinton = new Cavaleiro("Welinton Cavaleiro", 55, 450);
+        const Petista = new Petista("Goblin Petista", 30, 200);
 
         console.log("Configurando callbacks...");
-        Welinton.setAtualizadorStatus(() => atualizarSaude(Welinton, healthWelinton, fillWelinton, statusWelinton, 760));
-        Petista.setAtualizadorStatus(() => atualizarSaude(Petista, healthPetista, fillPetista, statusPetista, 720));
+        Welinton.setAtualizadorStatus(() => atualizarSaude(Welinton, healthWelinton, fillWelinton, statusWelinton, 40));
+        Petista.setAtualizadorStatus(() => atualizarSaude(Petista, healthPetista, fillPetista, statusPetista, 40));
 
         Welinton.setRegeneracao(12);
         Petista.setRegeneracao(8);
@@ -232,10 +233,7 @@ function startBattle(output, healthWelinton, fillWelinton, statusWelinton, cardW
         Welinton.setAnimacaoAtaque(() => animarAtaque(cardWelinton));
         Petista.setAnimacaoAtaque(() => animarAtaque(cardPetista));
 
-        console.log("Atualizando saúde inicial...");
-        atualizarSaude(Welinton, healthWelinton, fillWelinton, statusWelinton, 760);
-        atualizarSaude(Petista, healthPetista, fillPetista, statusPetista, 720);
-
+        
         console.log("Iniciando exemplos de ataques...");
         console.log("\n=== Exemplos de Ataques Diferentes ===\n");
         Welinton.atacarComTipo(Petista, "Espada");
@@ -250,35 +248,6 @@ function startBattle(output, healthWelinton, fillWelinton, statusWelinton, cardW
         console.error("Erro na função startBattle:", error);
     }
 }
-
-// Inicialização automática quando a página carrega
-window.addEventListener("load", function() {
-    console.log("Página carregada, inicializando jogo...");
-
-    const output = document.getElementById("output");
-    const runButton = document.getElementById("run");
-    const healthWelinton = document.getElementById("hp-welinton");
-    const fillWelinton = document.getElementById("health-fill-welinton");
-    const statusWelinton = document.getElementById("status-welinton");
-    const cardWelinton = document.getElementById("card-welinton");
-    const healthPetista = document.getElementById("hp-petista");
-    const fillPetista = document.getElementById("health-fill-petista");
-    const statusPetista = document.getElementById("status-petista");
-    const cardPetista = document.getElementById("card-petista");
-
-    console.log("Elementos encontrados:", {
-        output: !!output,
-        runButton: !!runButton,
-        healthWelinton: !!healthWelinton,
-        fillWelinton: !!fillWelinton,
-        statusWelinton: !!statusWelinton,
-        cardWelinton: !!cardWelinton,
-        healthPetista: !!healthPetista,
-        fillPetista: !!fillPetista,
-        statusPetista: !!statusPetista,
-        cardPetista: !!cardPetista
-    });
-
     if (runButton) {
         console.log("Botão encontrado, adicionando event listener...");
         runButton.addEventListener("click", function() {
@@ -289,4 +258,4 @@ window.addEventListener("load", function() {
     } else {
         console.error("ERRO: Botão 'run' não encontrado!");
     }
-});
+;

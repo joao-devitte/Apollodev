@@ -6,7 +6,7 @@ class Personagem {
         this.forca = forca;
         this.vida = vida;
         this.vidaMaxima = vida;
-        this.defesa = defesa;
+        this.defesa = 0;
         this.cura = cura;
         this.regeneracao = 0;
         this.ultimoEvento = "Sem ação recente";
@@ -14,10 +14,6 @@ class Personagem {
 
     setAtualizadorStatus(callback) {
         this.atualizarStatus = callback;
-    }
-
-    setRegeneracao(valor) {
-        this.regeneracao = valor;
     }
 
     setAnimacaoAtaque(callback) {
@@ -74,7 +70,6 @@ class Personagem {
 
 class Cavaleiro extends Personagem {
     constructor(nome, forca, vida) {
-        super(nome, forca, vida, 10, 25);
     }
 
     atacar(alvo) {
@@ -98,7 +93,6 @@ class Cavaleiro extends Personagem {
 
 class Petista extends Personagem {
     constructor(nome, forca, vida) {
-        super(nome, forca, vida, 8, 10);
     }
 
     atacar(alvo) {
@@ -131,9 +125,9 @@ class Ataque {
 
 class CatalogoAtaques {
     static ataques = new Map([
-        ["Espada", new Ataque("Espada", 20, "atacou com a espada")],
-        ["Mãos", new Ataque("Mãos", 5, "atacou com as mãos")],
-        ["Duas Espadas", new Ataque("Duas Espadas", 25, "atacou com 2 espadas")]
+        ["Espada", new Ataque("Espada", 50, "atacou com a espada")],
+        ["Mãos", new Ataque("Mãos", 10, "atacou com as mãos")],
+        ["Duas Espadas", new Ataque("Duas Espadas", 50, "atacou com 2 espadas")]
     ]);
 
     static obterAtaque(tipo) {
@@ -158,8 +152,7 @@ class Jogo {
             }
 
             player2.atacar(player1);
-            player1.regenerar();
-            player2.regenerar();
+          
 
             turno++;
         }
@@ -171,23 +164,6 @@ class Jogo {
         }
     }
 }
-
-
-const originalLog = console.log.bind(console);
-
-function appendLog(output, ...args) {
-    const text = args.map(item => (typeof item === "object" ? JSON.stringify(item, null, 2) : String(item))).join(" ");
-    if (output) {
-        output.textContent += text + "\n";
-        output.scrollTop = output.scrollHeight;
-    }
-}
-
-console.log = (...args) => {
-    const output = document.getElementById("output");
-    appendLog(output, ...args);
-    originalLog(...args);
-};
 
 function atualizarSaude(personagem, elementoTexto, elementoBarra, elementoEvento, vidaMaxima) {
     if (!elementoTexto || !elementoBarra || !elementoEvento) {
@@ -220,25 +196,20 @@ function startBattle(output, healthWelinton, fillWelinton, statusWelinton, cardW
         output.textContent = "";
 
         console.log("Criando personagens...");
-        const Welinton = new Cavaleiro("Welinton Cavaleiro", 55, 450);
-        const Petista = new Petista("Goblin Petista", 30, 200);
+        const Welinton = new Cavaleiro("Welinton Cavaleiro",400);
+        const Petista = new Petista("Goblin Petista", 100);
 
         console.log("Configurando callbacks...");
         Welinton.setAtualizadorStatus(() => atualizarSaude(Welinton, healthWelinton, fillWelinton, statusWelinton, 40));
         Petista.setAtualizadorStatus(() => atualizarSaude(Petista, healthPetista, fillPetista, statusPetista, 40));
 
-        Welinton.setRegeneracao(12);
-        Petista.setRegeneracao(8);
-
         Welinton.setAnimacaoAtaque(() => animarAtaque(cardWelinton));
         Petista.setAnimacaoAtaque(() => animarAtaque(cardPetista));
-
-        
-        console.log("Iniciando exemplos de ataques...");
-        console.log("\n=== Exemplos de Ataques Diferentes ===\n");
-        Welinton.atacarComTipo(Petista, "Espada");
-        Welinton.atacarComTipo(Petista, "Mãos");
-        Welinton.atacarComTipo(Petista, "Duas Espadas");
+        Welinton.setAnimacaoAtaque(() => animarAtaque(cardWelinton));
+        Welinton.setAnimacaoAtaque(() => animarAtaque(cardWelinton));
+        Petista.setAnimacaoAtaque(() => animarAtaque(cardPetista));
+        Welinton.setAnimacaoAtaque(() => animarAtaque(cardWelinton));
+        Welinton.setAnimacaoAtaque(() => animarAtaque(cardWelinton));
 
         console.log("\n=== Iniciando batalha ===\n");
         const game = new Jogo();

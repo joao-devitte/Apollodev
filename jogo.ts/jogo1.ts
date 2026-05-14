@@ -3,7 +3,7 @@ import { personagem } from "./personagem.js";
 export class jogo {
   public async inicia(player1: personagem, player2: personagem) {
     let turno = 1;
-    const maxTurnos = 100; // Limite de segurança
+    const maxTurnos = 50; 
 
     while (
       player1.isContinuaVivo() &&
@@ -24,8 +24,7 @@ export class jogo {
 
       (player2 as any).atacar(player1);
       await this.esperartempo();
-      player1.regenerar();
-      player2.regenerar();
+
 
       turno++;
     }

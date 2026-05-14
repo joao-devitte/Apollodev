@@ -8,7 +8,7 @@
     return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
   };
 
-  // personagem.ts
+
   var personagem;
   var init_personagem = __esm({
     "personagem.ts"() {
@@ -21,8 +21,6 @@
           this.vidaMaxima = 0;
           this.defesa = 0;
           this.cura = 0;
-          this.regeneracao = 0;
-          this.ultimoEvento = "Sem a\xE7\xE3o recente";
           this.nome = nome;
           this.forca = forca;
           this.vida = vida;
@@ -33,26 +31,8 @@
         setAtualizadorStatus(callback) {
           this.atualizarStatus = callback;
         }
-        setRegeneracao(valor) {
-          this.regeneracao = valor;
-        }
         setAnimacaoAtaque(callback) {
           this.animarHit = callback;
-        }
-        regenerar() {
-          if (this.regeneracao <= 0 || !this.isContinuaVivo() || this.vida >= this.vidaMaxima) {
-            return;
-          }
-          const antes = this.vida;
-          this.vida = Math.min(this.vidaMaxima, this.vida + this.regeneracao);
-          if (this.vida > antes) {
-            const ganho = this.vida - antes;
-            this.ultimoEvento = `Regenerou +${ganho} de vida`;
-            console.log(`${this.nome} regenerou ${ganho} de vida. Vida atual: ${this.vida}`);
-            if (typeof this.atualizarStatus === "function") {
-              this.atualizarStatus(this);
-            }
-          }
         }
         isContinuaVivo() {
           return this.vida > 0;
@@ -81,7 +61,7 @@
     }
   });
 
-  // ataque.ts
+
   var Ataque, CatalogoAtaques;
   var init_ataque = __esm({
     "ataque.ts"() {
@@ -104,7 +84,7 @@
       };
       CatalogoAtaques = class {
         static {
-          this.ataques = /* @__PURE__ */ new Map([
+          this.ataques = new Map([
             ["Espada", new Ataque("Espada", 20, "atacou com a espada")],
             ["M\xE3os", new Ataque("M\xE3os", 5, "atacou com as m\xE3os")],
             ["Duas Espadas", new Ataque("Duas Espadas", 25, "atacou com 2 espadas")]
@@ -120,7 +100,7 @@
     }
   });
 
-  // cavaleiro.ts
+  
   var cavaleiro;
   var init_cavaleiro = __esm({
     "cavaleiro.ts"() {
@@ -149,7 +129,7 @@
     }
   });
 
-  // Petista.ts
+  
   var petista;
   var init_Petista = __esm({
     "Petista.ts"() {
@@ -167,7 +147,7 @@
     }
   });
 
-  // jogo1.ts
+  
   var jogo;
   var init_jogo1 = __esm({
     "jogo1.ts"() {
@@ -175,7 +155,7 @@
       jogo = class {
         async inicia(player1, player2) {
           let turno = 1;
-          const maxTurnos = 100;
+          const maxTurnos = 50;
           while (player1.isContinuaVivo() && player2.isContinuaVivo() && turno <= maxTurnos) {
             console.log(
               "\n============================ TURNO " + turno + " ============================ "
@@ -187,8 +167,7 @@
             }
             player2.atacar(player1);
             await this.esperartempo();
-            player1.regenerar();
-            player2.regenerar();
+
             turno++;
           }
           if (turno > maxTurnos) {
@@ -208,7 +187,7 @@
     }
   });
 
-  // index.ts
+  
   var require_index = __commonJS({
     "index.ts"() {
       init_cavaleiro();
@@ -259,22 +238,12 @@
           }
           output.textContent = "";
           console.log("Criando personagens...");
-          const Welinton = new cavaleiro("Welinton Cavaleiro", 55, 500);
-          const PetistaInimigo = new petista("Goblin Petista", 15, 300);
+          const Welinton = new cavaleiro("Welinton Cavaleiro", 55, 450);
+          const PetistaInimigo = new petista("Goblin Petista", 15, 100);
           console.log("Configurando callbacks...");
           Welinton.setAtualizadorStatus(() => atualizarSaude(Welinton, healthWelinton, fillWelinton, statusWelinton, 500));
           PetistaInimigo.setAtualizadorStatus(() => atualizarSaude(PetistaInimigo, healthPetista, fillPetista, statusPetista, 300));
-          Welinton.setRegeneracao(12);
-          PetistaInimigo.setRegeneracao(8);
-          Welinton.setAnimacaoAtaque(() => animarAtaque(cardWelinton));
-          PetistaInimigo.setAnimacaoAtaque(() => animarAtaque(cardPetista));
-          console.log("Atualizando sa\xFAde inicial...");
-          console.log("Iniciando exemplos de ataques...");
-          console.log("\n=== Exemplos de Ataques Diferentes ===\n");
-          Welinton.atacarComTipo(PetistaInimigo, "Espada");
-          Welinton.atacarComTipo(PetistaInimigo, "M\xE3os");
-          Welinton.atacarComTipo(PetistaInimigo, "Duas Espadas");
-          console.log("\n=== Iniciando batalha ===\n");
+
           const game = new jogo();
           executarBatalhaAssincrona(game, Welinton, PetistaInimigo, output);
         } catch (error) {
@@ -310,11 +279,7 @@
             console.log("Batalha conclu\xEDda!");
             return;
           }
-          player2.atacar(player1);
-          player1.regenerar();
-          player2.regenerar();
-          turno++;
-          requestAnimationFrame(executarTurno);
+        
         }
         requestAnimationFrame(executarTurno);
       }

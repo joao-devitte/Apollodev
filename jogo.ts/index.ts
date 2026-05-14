@@ -55,19 +55,14 @@ function startBattle(output: HTMLPreElement | null, healthWelinton: HTMLElement 
     output.textContent = "";
 
     console.log("Criando personagens...");''
-    const Welinton = new Cavaleiro("Welinton Cavaleiro", 50, 500);
-    const PetistaInimigo = new Petista("Goblin Petista", 15, 300);
+    const Welinton = new Cavaleiro("Welinton Cavaleiro", 0, 10);
+    const PetistaInimigo = new Petista("Goblin Petista", 15, 10);
 
     console.log("Configurando callbacks..."); // animaçao de ataque
     Welinton.setAnimacaoAtaque(() => animarAtaque(cardWelinton));
     PetistaInimigo.setAtualizadorStatus(() => atualizarSaude(PetistaInimigo, healthPetista, fillPetista, statusPetista, 5);
-    await esperartempo();
-
-    PetistaInimigo.setAnimacaoAtaque(() => animarAtaque(cardPetista));
-
-    Welinton.setRegeneracao(12);
-
-    PetistaInimigo.setRegeneracao(8);
+    
+    PetistaInimigo.setAnimacaoAtaque(() => animarAtaque(cardPetista))
 
     Welinton.setAnimacaoAtaque(() => animarAtaque(cardWelinton));
     PetistaInimigo.setAnimacaoAtaque(() => animarAtaque(cardPetista));
@@ -82,7 +77,7 @@ function startBattle(output: HTMLPreElement | null, healthWelinton: HTMLElement 
     console.log("\n=== Iniciando batalha ===\n");
     const game = new Jogo();
     
-    // Executar a batalha de forma assíncrona para não bloquear a UI
+   
     executarBatalhaAssincrona(game, Welinton, PetistaInimigo, output);
     
   } catch (error) {
@@ -92,7 +87,7 @@ function startBattle(output: HTMLPreElement | null, healthWelinton: HTMLElement 
 
 function executarBatalhaAssincrona(game: any, player1: any, player2: any, output: HTMLPreElement): void {
   let turno = 1;
-  const maxTurnos = 100;
+  const maxTurnos = 50;
   let batalhaCompleta = false;
 
   function executarTurno() {
@@ -123,21 +118,10 @@ function executarBatalhaAssincrona(game: any, player1: any, player2: any, output
       return;
     }
 
-    player2.atacar(player1);
-    player1.regenerar();
-    player2.regenerar();
-
-    turno++;
-    
-    // Agendar próximo turno para a próxima frame
-    requestAnimationFrame(executarTurno);
   }
 
-  // Iniciar primeira frame
-  requestAnimationFrame(executarTurno);
 }
 
-// Inicialização automática quando a página carrega
 window.addEventListener("load", function() {
   console.log("Página carregada, inicializando jogo...");
 

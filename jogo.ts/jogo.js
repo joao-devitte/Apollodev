@@ -244,10 +244,10 @@
       function configurarPersonagens(welinton, petista, elementosWelinton, elementosPetista) {
         welinton.setAnimacaoAtaque(() => animarAtaque(elementosWelinton.card));
         welinton.setAtualizadorStatus(() => atualizarBarraSaude(welinton, elementosWelinton, welinton.vidaMaxima));
-        welinton.setRegeneracao(12);
+        welinton.setRegeneracao(20);
         petista.setAnimacaoAtaque(() => animarAtaque(elementosPetista.card));
         petista.setAtualizadorStatus(() => atualizarBarraSaude(petista, elementosPetista, petista.vidaMaxima));
-        petista.setRegeneracao(8);
+        petista.setRegeneracao(5);
       }
       function demonstrarTiposDeAtaque(welinton, petista) {
         console.log("\n=== Exemplos de Ataques Diferentes ===");

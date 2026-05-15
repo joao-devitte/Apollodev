@@ -16,7 +16,7 @@ class Personagem {
         this.atualizarStatus = callback;
     }
 
-    setRegeneracao(valor) {
+    setRegeneracao(valor) { 
         this.regeneracao = valor;
     }
 
@@ -227,8 +227,8 @@ function startBattle(output, healthWelinton, fillWelinton, statusWelinton, cardW
         Welinton.setAtualizadorStatus(() => atualizarSaude(Welinton, healthWelinton, fillWelinton, statusWelinton, 40));
         Petista.setAtualizadorStatus(() => atualizarSaude(Petista, healthPetista, fillPetista, statusPetista, 40));
 
-        Welinton.setRegeneracao(12);
-        Petista.setRegeneracao(8);
+        Welinton.setRegeneracao(20);
+        Petista.setRegeneracao(5);              
 
         Welinton.setAnimacaoAtaque(() => animarAtaque(cardWelinton));
         Petista.setAnimacaoAtaque(() => animarAtaque(cardPetista));
@@ -248,6 +248,8 @@ function startBattle(output, healthWelinton, fillWelinton, statusWelinton, cardW
         console.error("Erro na função startBattle:", error);
     }
 }
+
+//botao iniciar
     if (runButton) {
         console.log("Botão encontrado, adicionando event listener...");
         runButton.addEventListener("click", function() {

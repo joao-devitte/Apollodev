@@ -9,20 +9,14 @@
   };
 
   // personagem.ts
-  var personagem;
+  var Personagem;
   var init_personagem = __esm({
     "personagem.ts"() {
       "use strict";
-      personagem = class {
+      Personagem = class {
         constructor(nome, forca, vida, defesa = 0, cura = 0) {
-          this.nome = "personagem";
-          this.forca = 0;
-          this.vida = 0;
-          this.vidaMaxima = 0;
-          this.defesa = 0;
-          this.cura = 0;
-          this.regeneracao = 0;
           this.ultimoEvento = "Sem a\xE7\xE3o recente";
+          this.regeneracao = 0;
           this.nome = nome;
           this.forca = forca;
           this.vida = vida;
@@ -30,6 +24,7 @@
           this.defesa = defesa;
           this.cura = cura;
         }
+        // ─── Setters de configuração ────────────────────────────────────────────────
         setAtualizadorStatus(callback) {
           this.atualizarStatus = callback;
         }
@@ -39,30 +34,48 @@
         setAnimacaoAtaque(callback) {
           this.animarHit = callback;
         }
-        regenerar() {
-          if (this.regeneracao <= 0 || !this.isContinuaVivo() || this.vida >= this.vidaMaxima) {
-            return;
-          }
-          const antes = this.vida;
-          this.vida = Math.min(this.vidaMaxima, this.vida + this.regeneracao);
-          if (this.vida > antes) {
-            const ganho = this.vida - antes;
-            this.ultimoEvento = `Regenerou +${ganho} de vida`;
-            console.log(`${this.nome} regenerou ${ganho} de vida. Vida atual: ${this.vida}`);
-            if (typeof this.atualizarStatus === "function") {
-              this.atualizarStatus(this);
-            }
-          }
-        }
-        isContinuaVivo() {
+        // ─── Estado do personagem ───────────────────────────────────────────────────
+        /**
+         * Retorna true enquanto o personagem tiver vida acima de 0
+         */
+        estaVivo() {
           return this.vida > 0;
         }
+        /** Alias mantido para compatibilidade */
+        isContinuaVivo() {
+          return this.estaVivo();
+        }
+        // ─── Ações por turno ────────────────────────────────────────────────────────
+        /**
+         * Regenera vida ao final de cada turno.
+         * Só funciona se o personagem estiver vivo e abaixo da vida máxima.
+         */
+        regenerar() {
+          if (this.regeneracao <= 0 || !this.estaVivo() || this.vida >= this.vidaMaxima) {
+            return;
+          }
+          const vidaAnterior = this.vida;
+          this.vida = Math.min(this.vidaMaxima, this.vida + this.regeneracao);
+          const ganho = this.vida - vidaAnterior;
+          this.ultimoEvento = `Regenerou +${ganho} de vida`;
+          console.log(`${this.nome} regenerou ${ganho} de vida. Vida atual: ${this.vida}`);
+          this.executarCallback(this.atualizarStatus);
+        }
+        /**
+         * Recebe dano, aplica redução de defesa e, se sobreviver com vida baixa,
+         * ativa a auto-cura.
+         *
+         * CORREÇÃO: a auto-cura agora só ocorre se this.vida > 0 após o dano.
+         * Antes, o personagem se curava mesmo chegando a 0, impedindo o fim da batalha.
+         */
         sofrerAtaque(dano) {
           const danoEfetivo = dano * (1 - this.defesa / 100);
           this.vida = Math.max(0, this.vida - danoEfetivo);
           const danoExibicao = Number(danoEfetivo.toFixed(1));
-          console.log(`${this.nome} recebeu ${danoExibicao} de dano (reduzido de ${dano}). vida atual: ${this.vida.toFixed(1)}`);
-          if (this.vida < 50 && this.cura > 0) {
+          console.log(
+            `${this.nome} recebeu ${danoExibicao} de dano (reduzido de ${dano}). Vida atual: ${this.vida.toFixed(1)}`
+          );
+          if (this.vida > 0 && this.vida < 50 && this.cura > 0) {
             const curaAplicada = Math.min(this.cura, this.vidaMaxima - this.vida);
             this.vida += curaAplicada;
             this.ultimoEvento = `Recuperou +${curaAplicada} de vida`;
@@ -70,11 +83,16 @@
           } else {
             this.ultimoEvento = `Dano: -${danoExibicao} HP`;
           }
-          if (typeof this.atualizarStatus === "function") {
-            this.atualizarStatus(this);
-          }
-          if (typeof this.animarHit === "function") {
-            this.animarHit(this);
+          this.executarCallback(this.atualizarStatus);
+          this.executarCallback(this.animarHit);
+        }
+        // ─── Utilitários internos ───────────────────────────────────────────────────
+        /**
+         * Chama um callback com segurança (verifica se é função antes de executar)
+         */
+        executarCallback(callback) {
+          if (typeof callback === "function") {
+            callback(this);
           }
         }
       };
@@ -110,9 +128,15 @@
             ["Duas Espadas", new Ataque("Duas Espadas", 25, "atacou com 2 espadas")]
           ]);
         }
+        /**
+         * Obtém um ataque específico pelo tipo
+         */
         static obterAtaque(tipo) {
           return this.ataques.get(tipo);
         }
+        /**
+         * Obtém todos os ataques disponíveis
+         */
         static obterTodosAtaques() {
           return Array.from(this.ataques.values());
         }
@@ -121,20 +145,28 @@
   });
 
   // cavaleiro.ts
-  var cavaleiro;
+  var Cavaleiro;
   var init_cavaleiro = __esm({
     "cavaleiro.ts"() {
       "use strict";
       init_personagem();
       init_ataque();
-      cavaleiro = class extends personagem {
+      Cavaleiro = class extends Personagem {
+        // Defesa: 10%, Cura: 25
         constructor(nome, forca, vida) {
           super(nome, forca, vida, 10, 25);
         }
+        /**
+         * Ataque básico: usa a força do personagem
+         */
         atacar(alvo) {
           console.log(`${this.nome} atacou ${alvo.nome}`);
           alvo.sofrerAtaque(this.forca);
         }
+        /**
+         * Ataque especial: usa um tipo de ataque do catálogo
+         * Exemplo: "Espada", "Mãos", "Duas Espadas"
+         */
         atacarComTipo(alvo, tipoAtaque) {
           const ataque = CatalogoAtaques.obterAtaque(tipoAtaque);
           if (ataque) {
@@ -142,7 +174,7 @@
             console.log(`\u{1F4A5} Dano: ${ataque.getDano()}`);
             alvo.sofrerAtaque(ataque.getDano());
           } else {
-            console.log("Tipo de ataque inv\xE1lido!");
+            console.log(`Tipo de ataque inv\xE1lido: "${tipoAtaque}"`);
           }
         }
       };
@@ -150,59 +182,22 @@
   });
 
   // Petista.ts
-  var petista;
+  var Petista;
   var init_Petista = __esm({
     "Petista.ts"() {
       "use strict";
       init_personagem();
-      petista = class extends personagem {
+      Petista = class extends Personagem {
+        // Defesa: 8%, Cura: 10
         constructor(nome, forca, vida) {
           super(nome, forca, vida, 8, 10);
         }
+        /**
+         * Ataque básico: usa a força do personagem
+         */
         atacar(alvo) {
           console.log(`${this.nome} atacou ${alvo.nome}`);
           alvo.sofrerAtaque(this.forca);
-        }
-      };
-    }
-  });
-
-  // jogo1.ts
-  var jogo;
-  var init_jogo1 = __esm({
-    "jogo1.ts"() {
-      "use strict";
-      jogo = class {
-        async inicia(player1, player2) {
-          let turno = 1;
-          const maxTurnos = 100;
-          while (player1.isContinuaVivo() && player2.isContinuaVivo() && turno <= maxTurnos) {
-            console.log(
-              "\n============================ TURNO " + turno + " ============================ "
-            );
-            player1.atacar(player2);
-            await this.esperartempo();
-            if (!player2.isContinuaVivo()) {
-              break;
-            }
-            player2.atacar(player1);
-            await this.esperartempo();
-            player1.regenerar();
-            player2.regenerar();
-            turno++;
-          }
-          if (turno > maxTurnos) {
-            console.log("Limite de turnos atingido!");
-          }
-          if (player1.isContinuaVivo()) {
-            console.log(`${player1.nome} ganhou a luta.`);
-          } else {
-            console.log(`${player2.nome} ganhou a luta.`);
-          }
-        }
-        esperartempo() {
-          const milliseconds = 800;
-          return new Promise((x) => setTimeout(x, milliseconds));
         }
       };
     }
@@ -213,145 +208,133 @@
     "index.ts"() {
       init_cavaleiro();
       init_Petista();
-      init_jogo1();
-      var originalLog = console.log.bind(console);
-      var originalError = console.error.bind(console);
-      function appendLog(output, ...args) {
-        const text = args.map((item) => typeof item === "object" ? JSON.stringify(item, null, 2) : String(item)).join(" ");
+      var logOriginal = console.log.bind(console);
+      var erroOriginal = console.error.bind(console);
+      function escreverNoOutput(output, ...args) {
+        const linha = args.map((item) => typeof item === "object" ? JSON.stringify(item, null, 2) : String(item)).join(" ");
         if (output) {
-          output.textContent += text + "\n";
+          output.textContent += linha + "\n";
           output.scrollTop = output.scrollHeight;
         }
       }
       console.log = (...args) => {
         const output = document.getElementById("output");
-        appendLog(output, ...args);
-        originalLog(...args);
+        escreverNoOutput(output, ...args);
+        logOriginal(...args);
       };
       console.error = (...args) => {
         const output = document.getElementById("output");
-        appendLog(output, "[ERRO]", ...args);
-        originalError(...args);
+        escreverNoOutput(output, "[ERRO]", ...args);
+        erroOriginal(...args);
       };
-      function atualizarSaude(personagem2, elementoTexto, elementoBarra, elementoEvento, vidaMaxima) {
-        if (!elementoTexto || !elementoBarra || !elementoEvento) {
-          return;
-        }
-        const valor = Math.max(0, Math.round(personagem2.vida));
-        elementoTexto.textContent = `HP: ${valor} / ${vidaMaxima}`;
-        elementoBarra.style.width = `${Math.max(0, Math.min(100, valor / vidaMaxima * 100))}%`;
-        elementoEvento.textContent = personagem2.ultimoEvento || "Sem a\xE7\xE3o recente";
+      function atualizarBarraSaude(personagem, elementos, vidaMaxima) {
+        if (!elementos.hp || !elementos.barraSaude || !elementos.status) return;
+        const vidaAtual = Math.max(0, Math.round(personagem.vida));
+        const porcentagem = vidaAtual / vidaMaxima * 100;
+        elementos.hp.textContent = `HP: ${vidaAtual} / ${vidaMaxima}`;
+        elementos.barraSaude.style.width = `${Math.max(0, Math.min(100, porcentagem))}%`;
+        elementos.status.textContent = personagem.ultimoEvento || "Sem a\xE7\xE3o recente";
       }
       function animarAtaque(elemento) {
-        if (!elemento) {
-          return;
-        }
+        if (!elemento) return;
         elemento.classList.remove("hit");
         void elemento.offsetWidth;
         elemento.classList.add("hit");
       }
-      function startBattle(output, healthWelinton, fillWelinton, statusWelinton, cardWelinton, healthPetista, fillPetista, statusPetista, cardPetista) {
-        console.log("Fun\xE7\xE3o startBattle chamada!");
-        try {
-          if (!output) {
-            console.error("Output n\xE3o encontrado!");
-            return;
-          }
-          output.textContent = "";
-          console.log("Criando personagens...");
-          const Welinton = new cavaleiro("Welinton Cavaleiro", 55, 500);
-          const PetistaInimigo = new petista("Goblin Petista", 15, 300);
-          console.log("Configurando callbacks...");
-          Welinton.setAtualizadorStatus(() => atualizarSaude(Welinton, healthWelinton, fillWelinton, statusWelinton, 500));
-          PetistaInimigo.setAtualizadorStatus(() => atualizarSaude(PetistaInimigo, healthPetista, fillPetista, statusPetista, 300));
-          Welinton.setRegeneracao(12);
-          PetistaInimigo.setRegeneracao(8);
-          Welinton.setAnimacaoAtaque(() => animarAtaque(cardWelinton));
-          PetistaInimigo.setAnimacaoAtaque(() => animarAtaque(cardPetista));
-          console.log("Atualizando sa\xFAde inicial...");
-          console.log("Iniciando exemplos de ataques...");
-          console.log("\n=== Exemplos de Ataques Diferentes ===\n");
-          Welinton.atacarComTipo(PetistaInimigo, "Espada");
-          Welinton.atacarComTipo(PetistaInimigo, "M\xE3os");
-          Welinton.atacarComTipo(PetistaInimigo, "Duas Espadas");
-          console.log("\n=== Iniciando batalha ===\n");
-          const game = new jogo();
-          executarBatalhaAssincrona(game, Welinton, PetistaInimigo, output);
-        } catch (error) {
-          console.error("Erro na fun\xE7\xE3o startBattle:", error);
-        }
+      function configurarPersonagens(welinton, petista, elementosWelinton, elementosPetista) {
+        welinton.setAnimacaoAtaque(() => animarAtaque(elementosWelinton.card));
+        welinton.setAtualizadorStatus(() => atualizarBarraSaude(welinton, elementosWelinton, welinton.vidaMaxima));
+        welinton.setRegeneracao(12);
+        petista.setAnimacaoAtaque(() => animarAtaque(elementosPetista.card));
+        petista.setAtualizadorStatus(() => atualizarBarraSaude(petista, elementosPetista, petista.vidaMaxima));
+        petista.setRegeneracao(8);
       }
-      function executarBatalhaAssincrona(game, player1, player2, output) {
-        let turno = 1;
-        const maxTurnos = 50;
-        let batalhaCompleta = false;
-        function executarTurno() {
-          if (batalhaCompleta || turno > maxTurnos) {
-            if (turno > maxTurnos) {
-              console.log("Limite de turnos atingido!");
-            }
-            if (player1.isContinuaVivo()) {
-              console.log(`${player1.nome} ganhou a luta.`);
-            } else {
-              console.log(`${player2.nome} ganhou a luta.`);
-            }
-            console.log("Batalha conclu\xEDda!");
-            return;
-          }
-          console.log("\n============================ TURNO " + turno + " ============================ ");
-          player1.atacar(player2);
-          if (!player2.isContinuaVivo()) {
-            batalhaCompleta = true;
-            if (player1.isContinuaVivo()) {
-              console.log(`${player1.nome} ganhou a luta.`);
-            } else {
-              console.log(`${player2.nome} ganhou a luta.`);
-            }
-            console.log("Batalha conclu\xEDda!");
-            return;
-          }
-          player2.atacar(player1);
-          player1.regenerar();
-          player2.regenerar();
-          turno++;
-          requestAnimationFrame(executarTurno);
-        }
-        requestAnimationFrame(executarTurno);
+      function demonstrarTiposDeAtaque(welinton, petista) {
+        console.log("\n=== Exemplos de Ataques Diferentes ===");
+        welinton.atacarComTipo(petista, "Espada");
+        welinton.atacarComTipo(petista, "M\xE3os");
+        welinton.atacarComTipo(petista, "Duas Espadas");
       }
-      window.addEventListener("load", function() {
-        console.log("P\xE1gina carregada, inicializando jogo...");
-        const output = document.getElementById("output");
-        const runButton = document.getElementById("run");
-        const healthWelinton = document.getElementById("hp-welinton");
-        const fillWelinton = document.getElementById("health-fill-welinton");
-        const statusWelinton = document.getElementById("status-welinton");
-        const cardWelinton = document.getElementById("card-welinton");
-        const healthPetista = document.getElementById("hp-petista");
-        const fillPetista = document.getElementById("health-fill-petista");
-        const statusPetista = document.getElementById("status-petista");
-        const cardPetista = document.getElementById("card-petista");
-        console.log("Elementos encontrados:", {
-          output: !!output,
-          runButton: !!runButton,
-          healthWelinton: !!healthWelinton,
-          fillWelinton: !!fillWelinton,
-          statusWelinton: !!statusWelinton,
-          cardWelinton: !!cardWelinton,
-          healthPetista: !!healthPetista,
-          fillPetista: !!fillPetista,
-          statusPetista: !!statusPetista,
-          cardPetista: !!cardPetista
-        });
-        if (runButton) {
-          console.log("Bot\xE3o encontrado, adicionando event listener...");
-          runButton.addEventListener("click", function() {
-            console.log("Bot\xE3o clicado! Iniciando batalha...");
-            startBattle(output, healthWelinton, fillWelinton, statusWelinton, cardWelinton, healthPetista, fillPetista, statusPetista, cardPetista);
-          });
-          console.log("Event listener adicionado com sucesso!");
+      function esperarMs(ms = 1e3) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+      async function executarBatalha(welinton, petista) {
+        const MAX_TURNOS = 100;
+        for (let turno = 1; turno <= MAX_TURNOS; turno++) {
+          console.log(`
+${"=".repeat(30)} TURNO ${turno} ${"=".repeat(30)}`);
+          welinton.atacar(petista);
+          await esperarMs(800);
+          if (!petista.estaVivo()) {
+            anunciarVencedor(welinton, turno, false);
+            return;
+          }
+          petista.atacar(welinton);
+          await esperarMs(800);
+          if (!welinton.estaVivo()) {
+            anunciarVencedor(petista, turno, false);
+            return;
+          }
+          welinton.regenerar();
+          petista.regenerar();
+          await esperarMs(400);
+        }
+        anunciarVencedor(null, MAX_TURNOS, true);
+      }
+      function anunciarVencedor(vencedor, turno, limiteAtingido) {
+        if (limiteAtingido) {
+          console.log(`\u23F1\uFE0F Limite de ${turno} turnos atingido! Empate!`);
         } else {
-          console.error("ERRO: Bot\xE3o 'run' n\xE3o encontrado!");
+          console.log(`
+\u{1F3C6} ${vencedor.nome} ganhou a luta no turno ${turno}!`);
         }
+        console.log("Batalha conclu\xEDda!");
+      }
+      async function iniciarBatalha(output, elementosWelinton, elementosPetista) {
+        if (!output) {
+          console.error("Elemento output n\xE3o encontrado!");
+          return;
+        }
+        output.textContent = "";
+        console.log("\u{1F3AE} Iniciando batalha...");
+        try {
+          console.log("\u{1F465} Criando personagens...");
+          const welinton = new Cavaleiro("Welinton Cavaleiro", 50, 500);
+          const petista = new Petista("Goblin Petista", 15, 300);
+          console.log("\u2699\uFE0F Configurando interface...");
+          configurarPersonagens(welinton, petista, elementosWelinton, elementosPetista);
+          demonstrarTiposDeAtaque(welinton, petista);
+          console.log("\n\u2694\uFE0F === Iniciando batalha ===");
+          await executarBatalha(welinton, petista);
+        } catch (erro) {
+          console.error("Erro ao iniciar batalha:", erro);
+        }
+      }
+      window.addEventListener("load", () => {
+        console.log("\u{1F4C4} P\xE1gina carregada!");
+        const output = document.getElementById("output");
+        const botaoIniciar = document.getElementById("run");
+        const elementosWelinton = {
+          hp: document.getElementById("hp-welinton"),
+          barraSaude: document.getElementById("health-fill-welinton"),
+          status: document.getElementById("status-welinton"),
+          card: document.getElementById("card-welinton")
+        };
+        const elementosPetista = {
+          hp: document.getElementById("hp-petista"),
+          barraSaude: document.getElementById("health-fill-petista"),
+          status: document.getElementById("status-petista"),
+          card: document.getElementById("card-petista")
+        };
+        if (!botaoIniciar) {
+          console.error("\u274C Bot\xE3o 'run' n\xE3o encontrado no HTML!");
+          return;
+        }
+        botaoIniciar.addEventListener("click", () => {
+          console.log("\u{1F3AE} Bot\xE3o clicado! Iniciando batalha...");
+          iniciarBatalha(output, elementosWelinton, elementosPetista);
+        });
+        console.log("\u2705 Jogo pronto! Clique no bot\xE3o para come\xE7ar.");
       });
     }
   });

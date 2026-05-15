@@ -1,110 +1,161 @@
+// =============================================================================
+//  ARQUIVO PRINCIPAL — main.ts
+//
+//  Este arquivo é o ponto de entrada do jogo. Ele conecta a lógica de batalha
+//  (classes Cavaleiro e Petista) com a interface visual do HTML.
+//
+//  FLUXO GERAL:
+//    1. Página carrega     →  captura elementos do HTML (barras, cards, botão)
+//    2. Usuário clica      →  cria os personagens e inicia a batalha
+//    3. A batalha roda     →  turno a turno, com delay entre cada ação
+//    4. Alguém morre       →  anuncia o vencedor e encerra
+//
+//  SEÇÕES DESTE ARQUIVO (use Ctrl+F para navegar):
+//    § CONSOLE         – redireciona console.log para aparecer no HTML
+//    § INTERFACE UI    – funções que atualizam barras de vida e animações
+//    § BATALHA         – lógica de turno, delays e encerramento
+//    § INICIALIZAÇÃO   – cria personagens e dispara tudo
+//    § EVENT LISTENERS – conecta o botão HTML ao código
+// =============================================================================
+
 import { Cavaleiro } from "./cavaleiro.js";
 import { Petista } from "./Petista.js";
-import { Jogo } from "./jogo1.js";
+import { jogo } from "./jogo1.js";
 
-// ====== CONFIGURAÇÃO DO CONSOLE ======
-// Guarda as funções originais do console
-const originalLog = console.log.bind(console);
-const originalError = console.error.bind(console);
+
+// =============================================================================
+// § CONSOLE
+//
+//  Por padrão, console.log só aparece no DevTools do navegador (F12).
+//  Aqui sobrescrevemos console.log e console.error para que as mensagens
+//  também apareçam dentro do elemento <pre id="output"> no HTML,
+//  permitindo ver os logs diretamente na tela do jogo.
+// =============================================================================
+
+// Guarda as funções originais antes de sobrescrever, para não perder o DevTools
+const logOriginal   = console.log.bind(console);
+const erroOriginal  = console.error.bind(console);
 
 /**
- * Adiciona um novo log ao elemento de saída no HTML
+ * Escreve uma linha de texto no elemento <pre id="output"> do HTML.
+ * Aceita qualquer tipo: objetos viram JSON legível, o resto vira string.
  */
-function adicionarLogNaTela(output: HTMLPreElement | null, ...args: unknown[]): void {
-  const texto = args
+function escreverNoOutput(output: HTMLPreElement | null, ...args: unknown[]): void {
+  const linha = args
     .map((item) => (typeof item === "object" ? JSON.stringify(item, null, 2) : String(item)))
     .join(" ");
 
   if (output) {
-    output.textContent += texto + "\n";
-    output.scrollTop = output.scrollHeight;
+    output.textContent += linha + "\n";
+    output.scrollTop = output.scrollHeight; // mantém o scroll sempre no fim
   }
 }
 
-// Sobrescreve console.log para enviar para a tela também
+// Substitui console.log: escreve no HTML E no DevTools (via logOriginal)
 console.log = (...args: unknown[]): void => {
   const output = document.getElementById("output") as HTMLPreElement | null;
-  adicionarLogNaTela(output, ...args);
-  originalLog(...args);
+  escreverNoOutput(output, ...args);
+  logOriginal(...args);
 };
 
-// Sobrescreve console.error para enviar para a tela também
+// Substitui console.error: igual ao log, mas adiciona o prefixo "[ERRO]"
 console.error = (...args: unknown[]): void => {
   const output = document.getElementById("output") as HTMLPreElement | null;
-  adicionarLogNaTela(output, "[ERRO]", ...args);
-  originalError(...args);
+  escreverNoOutput(output, "[ERRO]", ...args);
+  erroOriginal(...args);
 };
 
-// ====== GERENCIAMENTO DA UI ======
+
+// =============================================================================
+// § INTERFACE UI
+//
+//  Funções que lêem o estado dos personagens e atualizam o HTML:
+//  texto de HP, largura da barra de saúde e animação de "levou hit".
+// =============================================================================
 
 /**
- * Interface que agrupa todos os elementos de um personagem na UI
+ * Agrupa as referências aos elementos HTML de um personagem.
+ * Cada personagem tem: texto de HP, barra de saúde, status e card.
  */
 interface ElementosPersonagem {
-  hp: HTMLElement | null;
-  barraSaude: HTMLElement | null;
-  status: HTMLElement | null;
-  card: HTMLElement | null;
+  hp:         HTMLElement | null; // ex: <span id="hp-welinton">
+  barraSaude: HTMLElement | null; // ex: <div id="health-fill-welinton">
+  status:     HTMLElement | null; // ex: <p id="status-welinton">
+  card:       HTMLElement | null; // ex: <div id="card-welinton"> (recebe classe "hit")
 }
 
 /**
- * Atualiza a barra de vida e informações de um personagem
+ * Lê a vida atual do personagem e atualiza o HTML:
+ *  - Texto "HP: X / Y"
+ *  - Largura da barra de saúde em porcentagem
+ *  - Último evento (ex: "atacou com Espada")
  */
 function atualizarBarraSaude(
   personagem: any,
   elementos: ElementosPersonagem,
   vidaMaxima: number
 ): void {
-  if (!elementos.hp || !elementos.barraSaude || !elementos.status) {
-    return;
-  }
+  if (!elementos.hp || !elementos.barraSaude || !elementos.status) return;
 
-  const vida = Math.max(0, Math.round(personagem.vida));
-  const percentualVida = (vida / vidaMaxima) * 100;
+  const vidaAtual   = Math.max(0, Math.round(personagem.vida));
+  const porcentagem = (vidaAtual / vidaMaxima) * 100;
 
-  elementos.hp.textContent = `HP: ${vida} / ${vidaMaxima}`;
-  elementos.barraSaude.style.width = `${Math.max(0, Math.min(100, percentualVida))}%`;
-  elementos.status.textContent = personagem.ultimoEvento || "Sem ação recente";
+  elementos.hp.textContent        = `HP: ${vidaAtual} / ${vidaMaxima}`;
+  elementos.barraSaude.style.width = `${Math.max(0, Math.min(100, porcentagem))}%`;
+  elementos.status.textContent    = personagem.ultimoEvento || "Sem ação recente";
 }
 
 /**
- * Anima um ataque no card do personagem
+ * Dispara a animação CSS de "levou hit" no card do personagem.
+ * Remove e readiciona a classe "hit" para reiniciar a animação mesmo
+ * que ela já esteja rodando — o "void offsetWidth" força o reflow do navegador.
  */
 function animarAtaque(elemento: HTMLElement | null): void {
   if (!elemento) return;
-
   elemento.classList.remove("hit");
-  // Força o navegador a reprocessar o CSS
-  void elemento.offsetWidth;
+  void elemento.offsetWidth; // faz o navegador reconhecer a remoção antes de adicionar de volta
   elemento.classList.add("hit");
 }
 
-// ====== LÓGICA DA BATALHA ======
+
+// =============================================================================
+// § BATALHA
+//
+//  Toda a lógica de combate fica aqui:
+//    - configurarPersonagens    → liga funções de UI aos personagens
+//    - demonstrarTiposDeAtaque  → exibe exemplos antes da batalha
+//    - esperarMs                → pausa assíncrona entre ações
+//    - executarBatalha          → loop principal turno a turno
+//    - anunciarVencedor         → exibe o resultado final
+// =============================================================================
 
 /**
- * Configuração inicial dos personagens e callbacks
+ * Liga as funções de animação e atualização de UI a cada personagem,
+ * e define a quantidade de vida regenerada por turno.
+ *
+ * Usa callbacks para que as classes (Cavaleiro, Petista) não precisem
+ * conhecer o HTML — elas simplesmente chamam a função que receberam.
  */
 function configurarPersonagens(
   welinton: Cavaleiro,
-  petista: Petista,
+  petista:  Petista,
   elementosWelinton: ElementosPersonagem,
-  elementosPetista: ElementosPersonagem
+  elementosPetista:  ElementosPersonagem
 ): void {
-  // Welinton
-  welinton.setAnimacaoAtaque(() => animarAtaque(elementosWelinton.card));
-  welinton.setAtualizadorStatus(() => atualizarBarraSaude(welinton, elementosWelinton, 500));
-  welinton.setRegeneracao(12);
+  welinton.setAnimacaoAtaque(  () => animarAtaque(elementosWelinton.card));
+  welinton.setAtualizadorStatus(() => atualizarBarraSaude(welinton, elementosWelinton, welinton.vidaMaxima));
+  welinton.setRegeneracao(12); // regenera 12 HP por turno
 
-  // Petista
-  petista.setAnimacaoAtaque(() => animarAtaque(elementosPetista.card));
-  petista.setAtualizadorStatus(() => atualizarBarraSaude(petista, elementosPetista, 300));
-  petista.setRegeneracao(8);
+  petista.setAnimacaoAtaque(  () => animarAtaque(elementosPetista.card));
+  petista.setAtualizadorStatus(() => atualizarBarraSaude(petista, elementosPetista, petista.vidaMaxima));
+  petista.setRegeneracao(8);  // regenera 8 HP por turno
 }
 
 /**
- * Executa os exemplos de ataques especiais antes da batalha
+ * Executa três ataques de demonstração antes da batalha principal
+ * para mostrar no log os diferentes tipos de ataque disponíveis.
  */
-function executarExemplosDeAtaques(welinton: Cavaleiro, petista: Petista): void {
+function demonstrarTiposDeAtaque(welinton: Cavaleiro, petista: Petista): void {
   console.log("\n=== Exemplos de Ataques Diferentes ===");
   welinton.atacarComTipo(petista, "Espada");
   welinton.atacarComTipo(petista, "Mãos");
@@ -112,151 +163,168 @@ function executarExemplosDeAtaques(welinton: Cavaleiro, petista: Petista): void 
 }
 
 /**
- * Interface para rastrear o estado da batalha
+ * Pausa a execução por X milissegundos.
+ * Usada com "await" no loop de batalha para que cada ação
+ * apareça na tela antes da próxima acontecer.
+ *
+ * Exemplo: await esperarMs(800) → espera 0,8 segundo
  */
-interface EstadoBatalha {
-  turno: number;
-  maxTurnos: number;
-  completa: boolean;
+function esperarMs(ms: number = 1000): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
- * Executa a batalha de forma assíncrona
- * Usa requestAnimationFrame para não bloquear a UI
+ * Loop principal da batalha — roda até alguém morrer ou atingir 100 turnos.
+ *
+ * Sequência de cada turno:
+ *   1. Welinton ataca o Petista   → aguarda 800ms (dá tempo de ver na tela)
+ *   2. Checa se Petista morreu    → se sim, encerra
+ *   3. Petista ataca o Welinton   → aguarda 800ms
+ *   4. Checa se Welinton morreu   → se sim, encerra
+ *   5. Ambos regeneram vida       → aguarda 400ms
+ *   6. Avança para o próximo turno
  */
-function executarBatalhaAssincrona(welinton: Cavaleiro, petista: Petista): void {
-  const estado: EstadoBatalha = {
-    turno: 1,
-    maxTurnos: 100,
-    completa: false,
-  };
+async function executarBatalha(welinton: Cavaleiro, petista: Petista): Promise<void> {
+  const MAX_TURNOS = 100;
 
-  function executarTurno() {
-    // Verifica condição de término
-    if (estado.completa || estado.turno > estado.maxTurnos) {
-      finalizarBatalha(estado, welinton, petista);
-      return;
-    }
+  for (let turno = 1; turno <= MAX_TURNOS; turno++) {
+    console.log(`\n${"=".repeat(30)} TURNO ${turno} ${"=".repeat(30)}`);
 
-    // Executa turno
-    console.log(`\n${'='.repeat(30)} TURNO ${estado.turno} ${'='.repeat(30)}`);
+    // --- Ataque de Welinton ---
     welinton.atacar(petista);
+    await esperarMs(800);
 
-    // Verifica se inimigo morreu
     if (!petista.estaVivo()) {
-      estado.completa = true;
-      finalizarBatalha(estado, welinton, petista);
+      anunciarVencedor(welinton, turno, false);
       return;
     }
 
-    // Turno do inimigo
+    // --- Ataque do Petista ---
     petista.atacar(welinton);
+    await esperarMs(800);
 
-    // Regeneração
+    if (!welinton.estaVivo()) {
+      anunciarVencedor(petista, turno, false);
+      return;
+    }
+
+    // --- Regeneração de ambos ---
     welinton.regenerar();
     petista.regenerar();
-
-    estado.turno++;
-
-    // Continua a batalha no próximo frame
-    requestAnimationFrame(executarTurno);
+    await esperarMs(400);
   }
 
-  requestAnimationFrame(executarTurno);
+  // Chegou aqui: ninguém morreu em 100 turnos → empate
+  anunciarVencedor(null, MAX_TURNOS, true);
 }
 
 /**
- * Finaliza a batalha e anuncia o vencedor
+ * Exibe a mensagem de fim de batalha no log.
+ *
+ * @param vencedor        - O personagem que ganhou, ou null em caso de empate
+ * @param turno           - Turno em que a batalha terminou
+ * @param limiteAtingido  - true se a batalha acabou por limite de turnos
  */
-function finalizarBatalha(
-  estado: EstadoBatalha,
-  welinton: Cavaleiro,
-  petista: Petista
+function anunciarVencedor(
+  vencedor: Cavaleiro | Petista | null,
+  turno: number,
+  limiteAtingido: boolean
 ): void {
-  if (estado.turno > estado.maxTurnos) {
-    console.log("⏱️ Limite de turnos atingido!");
+  if (limiteAtingido) {
+    console.log(`⏱️ Limite de ${turno} turnos atingido! Empate!`);
+  } else {
+    console.log(`\n🏆 ${vencedor!.nome} ganhou a luta no turno ${turno}!`);
   }
-
-  const vencedor = welinton.estaVivo() ? welinton : petista;
-  console.log(`\n🏆 ${vencedor.nome} ganhou a luta!");
   console.log("Batalha concluída!");
 }
 
-// ====== INICIALIZAÇÃO ======
+
+// =============================================================================
+// § INICIALIZAÇÃO
+//
+//  Chamada quando o usuário clica no botão "Iniciar Batalha".
+//  Limpa o log anterior, cria os personagens do zero,
+//  configura a UI e dispara a batalha.
+// =============================================================================
 
 /**
- * Inicia a batalha
+ * Ponto de entrada da batalha — chamado pelo clique do botão.
+ * Recria os personagens a cada clique, reiniciando a partida do zero.
  */
-function iniciarBatalha(
+async function iniciarBatalha(
   output: HTMLPreElement | null,
   elementosWelinton: ElementosPersonagem,
-  elementosPetista: ElementosPersonagem
-): void {
-  console.log("🎮 Iniciando batalha...");
-
+  elementosPetista:  ElementosPersonagem
+): Promise<void> {
   if (!output) {
     console.error("Elemento output não encontrado!");
     return;
   }
 
-  // Limpa o console anterior
+  // Limpa o log da batalha anterior antes de começar
   output.textContent = "";
+  console.log("🎮 Iniciando batalha...");
 
   try {
-    // Cria os personagens
+    // Cria personagens: (nome, ataque base, vida máxima)
     console.log("👥 Criando personagens...");
     const welinton = new Cavaleiro("Welinton Cavaleiro", 50, 500);
-    const petista = new Petista("Goblin Petista", 15, 300);
+    const petista  = new Petista("Goblin Petista",       15, 300);
 
-    // Configura callbacks de UI
+    // Conecta os personagens à interface visual
     console.log("⚙️ Configurando interface...");
     configurarPersonagens(welinton, petista, elementosWelinton, elementosPetista);
 
-    // Executa exemplos de ataques
-    executarExemplosDeAtaques(welinton, petista);
+    // Exibe exemplos de ataques no log antes de começar
+    demonstrarTiposDeAtaque(welinton, petista);
 
-    // Inicia a batalha
+    // Inicia o loop de batalha e aguarda ele terminar
     console.log("\n⚔️ === Iniciando batalha ===");
-    executarBatalhaAssincrona(welinton, petista);
+    await executarBatalha(welinton, petista);
+
   } catch (erro) {
     console.error("Erro ao iniciar batalha:", erro);
   }
 }
 
-// ====== EVENT LISTENERS ======
 
-/**
- * Inicialização quando a página carrega
- */
+// =============================================================================
+// § EVENT LISTENERS
+//
+//  Aguarda a página carregar completamente, captura todos os elementos
+//  do HTML e registra o clique no botão para chamar iniciarBatalha().
+// =============================================================================
+
 window.addEventListener("load", () => {
   console.log("📄 Página carregada!");
 
-  // Obtém todos os elementos da página
-  const output = document.getElementById("output") as HTMLPreElement | null;
-  const runButton = document.getElementById("run") as HTMLButtonElement | null;
+  // Captura o painel de log e o botão de início
+  const output       = document.getElementById("output") as HTMLPreElement   | null;
+  const botaoIniciar = document.getElementById("run")    as HTMLButtonElement | null;
 
+  // Captura os elementos visuais do Welinton
   const elementosWelinton: ElementosPersonagem = {
-    hp: document.getElementById("hp-welinton"),
+    hp:         document.getElementById("hp-welinton"),
     barraSaude: document.getElementById("health-fill-welinton"),
-    status: document.getElementById("status-welinton"),
-    card: document.getElementById("card-welinton"),
+    status:     document.getElementById("status-welinton"),
+    card:       document.getElementById("card-welinton"),
   };
 
+  // Captura os elementos visuais do Petista
   const elementosPetista: ElementosPersonagem = {
-    hp: document.getElementById("hp-petista"),
+    hp:         document.getElementById("hp-petista"),
     barraSaude: document.getElementById("health-fill-petista"),
-    status: document.getElementById("status-petista"),
-    card: document.getElementById("card-petista"),
+    status:     document.getElementById("status-petista"),
+    card:       document.getElementById("card-petista"),
   };
 
-  // Verifica se botão foi encontrado
-  if (!runButton) {
-    console.error("❌ Botão 'run' não encontrado!");
+  if (!botaoIniciar) {
+    console.error("❌ Botão 'run' não encontrado no HTML!");
     return;
   }
 
-  // Adiciona evento ao botão
-  runButton.addEventListener("click", () => {
+  // Ao clicar no botão, inicia (ou reinicia) a batalha
+  botaoIniciar.addEventListener("click", () => {
     console.log("🎮 Botão clicado! Iniciando batalha...");
     iniciarBatalha(output, elementosWelinton, elementosPetista);
   });

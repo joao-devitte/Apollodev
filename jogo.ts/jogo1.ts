@@ -1,7 +1,7 @@
-import { personagem } from "./personagem.js";
+import { Personagem } from "./personagem.js";
 
 export class jogo {
-  public async inicia(player1: personagem, player2: personagem) {
+  public async inicia(player1: Personagem, player2: Personagem) {
     let turno = 1;
     const maxTurnos = 100; // Limite de segurança
 
